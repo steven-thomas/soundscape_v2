@@ -26,7 +26,7 @@ def soundscape(input_args, x_out=None, y_out=None, sound_map=None, stipple=None)
 	#setup sound dict if not already setup
 	filepath = os.path.join(sv.sound_dict_loc, sv.sound_dict_name)
 	if not os.access(filepath, 0):
-		make_sound_dict()
+		sf.make_sound_dict()
 
 	#setup user interface
 	main_window = gtk.Window()
@@ -91,6 +91,6 @@ def soundscape(input_args, x_out=None, y_out=None, sound_map=None, stipple=None)
 
 	#close program when gtk.main quits
 	t.quit = True
-	sys.exit()
+	main_window.destroy()
 	return None
 	
