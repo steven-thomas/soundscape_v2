@@ -49,6 +49,7 @@ def soundscape(input_args, x_out=None, y_out=None, sound_map=None, stipple=None)
 	array_data['x_map'] = x_map
 
 	y_out, y_map = sf.clean_coord_map(array_data, y_out, 'y', screen_height)
+	y_map.reverse()				#changes array layout to cartesian layout
 	if y_out == None:
 		raise StandardError("invalid y out value")
 	array_data['y_out'] = y_out
