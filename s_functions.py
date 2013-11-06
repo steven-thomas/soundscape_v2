@@ -47,33 +47,32 @@ def clean_coord_map(array_data, xy_out, orientation, screen_dim):
 			xy_out = [xy0, xy1]
 		else:
 			xy_out = np.arange(array_dim) + 0.5
+	xy_map = build_xy_mapping(array_data['multiple_arrays'], xy_out, screen_dim)
+	return xy_out, xy_map
 
-	if not array_data['multiple_arrays']:
+def build_xy_mapping(multiple_arrays, xy_out, screen_dim):
+	if not multiple_arrays:
 		spacing = make_spacing(xy_out)
-		xy_map = make_xy_map(spacing, array_dim, screen_dim)
+		xy_map = make_xy_map(spacing, screen_dim)
 		if xy_map == None:
 			return None, None
 	else:
 		if len(xy_out) != 2:
-			if array_dim[0] != array_dim[1]:
-				return None, None
-			spacing = make_spacing(xy_out)
-			xy0 = make_xy_map(spacing, array_dim[0], screen_dim)
-			xy1 = make_xy_map(spacing, array_dim[1], screen_dim)
-			xy_map = [xy0, xy1]
+			return None, None
 		else:
 			spacing0 = make_spacing(xy_out[0])
 			spacing1 = make_spacing(xy_out[1])
-			xy0 = make_xy_map(spacing0, array_dim[0], screen_dim)
-			xy1 = make_xy_map(spacing1, array_dim[1], screen_dim)
+			xy0 = make_xy_map(spacing0, screen_dim)
+			xy1 = make_xy_map(spacing1, screen_dim)
 			xy_map = [xy0, xy1]
-		if None in xy_map:
-			return None, None
-	return xy_out, xy_map
+	return xy_map
 
 def make_spacing(xy_out):
+	xy_out = np.array(xy_out)
 	if not (sorted(xy_out) == xy_out).all():
 		return None
+	if len(xy_out) == 1:
+		return [0, 1]
 	dist1 = float(xy_out[1] - xy_out[0])/2
 	dist2 = float(xy_out[-1] - xy_out[-2])/2
 	first = xy_out[0] - dist1
@@ -84,11 +83,8 @@ def make_spacing(xy_out):
 	spacing.append(last)
 	return spacing
 
-def make_xy_map(spacing, array_dim, screen_dim):
+def make_xy_map(spacing, screen_dim):
 	if spacing == None:
-		return None
-	if len(spacing) != array_dim + 1:
-		print 'incorrect length'
 		return None
 	size = (spacing[-1] - spacing[0])
 	spacing_percent = [(i-spacing[0])/float(size) for i in spacing[1:]]
@@ -215,19 +211,20 @@ class audio_thread(threading.Thread):
 #-------------------------------------------------------------------------------------------------
 #                                      FUNCTIONS FOR PYGTK
 #-------------------------------------------------------------------------------------------------
-def zoom_in(xy_map, xy_pos):
-	output = [xy_map[xy_pos - (2+i)/2] for i in range(xy_pos)]
-	output.reverse()
-	for i in range(len(xy_map) - xy_pos):
-		output.append(xy_map[xy_pos + i/2])
-	return output
-
 def key_press_callback(window, event, array_data):
 	if event.keyval == gtk.keysyms.minus:
-		array_data['x_map'] = [x for x in array_data['original_x_map'] ]
-		array_data['y_map'] = [y for y in array_data['original_y_map'] ]
+		#total zoom out
+		if array_data['multiple_arrays']:
+			array_data['x_map'][0] = [x for x in array_data['original_x_map'][0] ]
+			array_data['y_map'][0] = [y for y in array_data['original_y_map'][0] ]
+			array_data['x_map'][1] = [x for x in array_data['original_x_map'][1] ]
+			array_data['y_map'][1] = [y for y in array_data['original_y_map'][1] ]
+		else:
+			array_data['x_map'] = [x for x in array_data['original_x_map'] ]
+			array_data['y_map'] = [y for y in array_data['original_y_map'] ]
 
-	if event.keyval == gtk.keysyms.plus:
+	if event.keyval == gtk.keysyms.equal:
+		#zoom in
 		x_pos, y_pos = window.get_pointer()
 		width  = gtk.gdk.screen_width()
 		height = gtk.gdk.screen_height()
@@ -236,22 +233,68 @@ def key_press_callback(window, event, array_data):
 		y_pos = max(y_pos, 0)
 		y_pos = min(y_pos, height)
 
-		array_data['x_map'] = zoom_in(array_data['x_map'], x_pos)
-		array_data['y_map'] = zoom_in(array_data['y_map'], y_pos)
+		x_map =  array_data['x_map']
+		y_map =  array_data['y_map']
+		if array_data['multiple_arrays']:
+			y_map[0].reverse()
+			y_map[1].reverse()
+		else:
+			y_map.reverse()				#changes cartesian layout to array layout
+
+		x_min = int(x_pos * sv.zoom_fac)
+		x_max = int(x_pos + ((width - x_pos) * sv.zoom_fac) )
+		y_min = int(y_pos * sv.zoom_fac)
+		y_max = int(y_pos + ((height - y_pos) * sv.zoom_fac) )
+
+		if array_data['multiple_arrays']:
+			x0_min = x_map[0][x_min]
+			x1_min = x_map[1][x_min]
+			x0_max = x_map[0][x_max]+1
+			x1_max = x_map[1][x_max]+1
+			y0_min = y_map[0][y_min]
+			y1_min = y_map[1][y_min]
+			y0_max = y_map[0][y_max]+1
+			y1_max = y_map[1][y_max]+1
+
+			nx_out = [array_data['x_out'][0][x0_min:x0_max], array_data['x_out'][1][x1_min:x1_max]]
+			ny_out = [array_data['y_out'][0][y0_min:y0_max], array_data['y_out'][1][y1_min:y1_max]]
+			x_map = build_xy_mapping(True, nx_out, width)
+			y_map = build_xy_mapping(True, ny_out, height)
+		else:
+			x_min = x_map[x_min]
+			x_max = x_map[x_max]+1
+			y_min = y_map[y_min]
+			y_max = y_map[y_max]+1
+
+			nx_out = array_data['x_out'][x_min:x_max]
+			ny_out = array_data['y_out'][y_min:y_max]
+			x_map = build_xy_mapping(False, nx_out, width)
+			y_map = build_xy_mapping(False, ny_out, height)
+
+		if array_data['multiple_arrays']:
+			y_map[0].reverse()
+			y_map[1].reverse()
+		else:
+			y_map.reverse()				#changes array layout to cartesian layout
+		array_data['x_map'] = x_map
+		array_data['y_map'] = y_map
 
 	if event.keyval == gtk.keysyms.space:
+		#data print out
 		x_pos, y_pos = window.get_pointer()
 		if array_data['multiple_arrays']:
 			x0 = array_data['x_map'][0][x_pos]
 			y0 = array_data['y_map'][0][y_pos]
 			x1 = array_data['x_map'][1][x_pos]
 			y1 = array_data['y_map'][1][y_pos]
-			print array_data['x_out'][x0],', ',
-			print array_data['y_out'][y0],': ',
-			print array_data['values'][y0,x0],'; ',
-			print array_data['x_out'][x1],', ',
-			print array_data['y_out'][y1],': ',
-			print array_data['values'][y1,x1]
+
+			print  array_data['x_out'][0][x0],',',
+			print  array_data['y_out'][0][y0],':',
+			print array_data['values'][0][y0,x0],';',
+
+			print  array_data['x_out'][1][x1],',',
+			print  array_data['y_out'][1][y1],':',
+			print array_data['values'][1][y1,x1]
 		else:
 			x = array_data['x_map'][x_pos]
 			y = array_data['y_map'][y_pos]
@@ -336,22 +379,53 @@ def make_sound_dict():
 #-------------------------------------------------------------------------------------------------
 #                                    FUNCTIONS FOR DEBUGGING
 #-------------------------------------------------------------------------------------------------
-def debug_printing(array_data, width, height):
-	print array_data.keys()
-	print 'matrix shape: ',
-	print array_data['values'].shape
-	print 'width: ',
-	print array_data['width']
-	print 'height: ',
-	print array_data['height']
-	print 'x_map'
-	for i in set(array_data['x_map']):
-		print (str(i)+' count: '),
-		print array_data['x_map'].index(i)
-	print 'y_map'
-	for i in set(array_data['y_map']):
-		print (str(i)+' count: '),
-		print array_data['y_map'].index(i)
-	print 'sound map: ',
-	print array_data['sound_map']
+def debug_printing(array_data):
+	#print array_data.keys()
+	if array_data['multiple_arrays']:
+		pass
+	else:
+		print 'map zoomed:',
+		print not array_data['original_y_map'] == array_data['y_map']
+		print 'y_map values:'
+		cur_val = array_data['y_map'][0]
+		start = 0
+		for i in range(len(array_data['y_map'])):
+			val = array_data['y_map'][i]
+			if val != cur_val:
+				print str(cur_val)+': '+str(start)+'-'+str(i)
+				cur_val = val
+				start = i
+		print str(array_data['y_map'][-1])+': '+str(start)+'-'+str(len(array_data['y_map']))
+
+		print '\n'
+		print 'original_y_map values:'
+		cur_val = array_data['original_y_map'][0]
+		start = 0
+		for i in range(len(array_data['original_y_map'])):
+			val = array_data['original_y_map'][i]
+			if val != cur_val:
+				print str(cur_val)+': '+str(start)+'-'+str(i)
+				cur_val = val
+				start = i
+		print str(array_data['original_y_map'][-1])+': '+str(start)+'-'+str(len(array_data['original_y_map']))
+		print '\n'
+
+		"""
+		print 'matrix shape: ',
+		print array_data['values'].shape
+		print 'width: ',
+		print array_data['width']
+		print 'height: ',
+		print array_data['height']
+		print 'x_map'
+		for i in set(array_data['x_map']):
+			print (str(i)+' count: '),
+			print array_data['x_map'].index(i)
+		print 'y_map'
+		for i in set(array_data['y_map']):
+			print (str(i)+' count: '),
+			print array_data['y_map'].index(i)
+		print 'values: ',
+		print array_data['values']
+		"""
 	return None
