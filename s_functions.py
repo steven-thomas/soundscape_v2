@@ -258,8 +258,14 @@ def key_press_callback(window, event, array_data):
 
 			nx_out = [array_data['x_out'][0][x0_min:x0_max], array_data['x_out'][1][x1_min:x1_max]]
 			ny_out = [array_data['y_out'][0][y0_min:y0_max], array_data['y_out'][1][y1_min:y1_max]]
-			x_map = build_xy_mapping(True, nx_out, width)
-			y_map = build_xy_mapping(True, ny_out, height)
+			x_rel_map = build_xy_mapping(True, nx_out, width)
+			y_rel_map = build_xy_mapping(True, ny_out, height)
+			x_map0 = [i + x0_min for i in x_rel_map[0]]
+			x_map1 = [i + x1_min for i in x_rel_map[1]]
+			y_map0 = [i + y0_min for i in y_rel_map[0]]
+			y_map1 = [i + y1_min for i in y_rel_map[1]]
+			x_map = [x_map0, x_map1]
+			y_map = [y_map0, y_map1]
 		else:
 			x_min = x_map[x_min]
 			x_max = x_map[x_max]+1
@@ -268,8 +274,10 @@ def key_press_callback(window, event, array_data):
 
 			nx_out = array_data['x_out'][x_min:x_max]
 			ny_out = array_data['y_out'][y_min:y_max]
-			x_map = build_xy_mapping(False, nx_out, width)
-			y_map = build_xy_mapping(False, ny_out, height)
+			x_rel_map = build_xy_mapping(False, nx_out, width)
+			y_rel_map = build_xy_mapping(False, ny_out, height)
+			x_map = [i + x_min for i in x_rel_map]
+			y_map = [i + y_min for i in y_rel_map]
 
 		if array_data['multiple_arrays']:
 			y_map[0].reverse()
