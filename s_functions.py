@@ -228,9 +228,9 @@ def key_press_callback(window, event, array_data):
 		x_pos, y_pos = window.get_pointer()
 		width  = gtk.gdk.screen_width()
 		height = gtk.gdk.screen_height()
-		x_pos = max(x_pos, 0)
+		x_pos = max(x_pos, 1)
 		x_pos = min(x_pos, width)
-		y_pos = max(y_pos, 0)
+		y_pos = max(y_pos, 1)
 		y_pos = min(y_pos, height)
 
 		x_map =  array_data['x_map']
@@ -240,6 +240,7 @@ def key_press_callback(window, event, array_data):
 			y_map[1].reverse()
 		else:
 			y_map.reverse()				#changes cartesian layout to array layout
+		y_pos = height - y_pos				#When changing co-ord layout, pointer also moves
 
 		x_min = int(x_pos * sv.zoom_fac)
 		x_max = int(x_pos + ((width - x_pos) * sv.zoom_fac) )
