@@ -17,7 +17,7 @@ pygtk.require('2.0')
 gobject.threads_init()
 gtk.gdk.threads_init()
 
-def soundscape(input_args, x_out=None, y_out=None, sound_map=None, stipple=None):
+def soundscape(input_args, x_out=None, y_out=None, sound_map=None, stipple=None, volume=None):
 	#clean input
 	array_data = sf.clean_input(input_args)
 	if array_data == None:
@@ -25,8 +25,11 @@ def soundscape(input_args, x_out=None, y_out=None, sound_map=None, stipple=None)
 
 	#setup sound dict if not already setup
 	filepath = os.path.join(sv.sound_dict_loc, sv.sound_dict_name)
-	if not os.access(filepath, 0):
-		sf.make_sound_dict()
+	if not os.access(filepath, 0) and volume == None:
+		sf.make_sound_dict(sv.default_volume)
+	if volume != None:
+		volume = min(max(0.0, volume), 1.0)
+		sf.make_sound_dict(volume)
 
 	#setup user interface
 	main_window = gtk.Window()

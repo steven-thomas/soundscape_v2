@@ -4,6 +4,7 @@ Started 21/7/2013
 @author: Steven Thomas
 '''
 
+default_volume = 0.8
 zoom_fac = 0.5
 sound_dict_loc = ''
 sound_dict_name = 'sound_dict'

@@ -47,6 +47,19 @@ def clean_coord_map(array_data, xy_out, orientation, screen_dim):
 			xy_out = [xy0, xy1]
 		else:
 			xy_out = np.arange(array_dim) + 0.5
+	else:
+		if array_data['multiple_arrays']:
+			if len(xy_out) == 2:
+				if len(xy_out[0]) != array_dim[0] or len(xy_out[1]) != array_dim[1]:
+					xy_out = None
+			else:
+				if len(xy_out) == array_dim[0] or len(xy_out) == array_dim[1]:
+					new_out = [ i for i in xy_out ]
+					xy_out = [new_out, new_out]
+		else:
+			if len(xy_out) != array_dim:
+				xy_out = None
+
 	xy_map = build_xy_mapping(array_data['multiple_arrays'], xy_out, screen_dim)
 	return xy_out, xy_map
 
@@ -297,19 +310,45 @@ def key_press_callback(window, event, array_data):
 			x1 = array_data['x_map'][1][x_pos]
 			y1 = array_data['y_map'][1][y_pos]
 
-			print  array_data['x_out'][0][x0],',',
-			print  array_data['y_out'][0][y0],':',
-			print array_data['values'][0][y0,x0],';',
+			x_out_0 = str(array_data['x_out'][0][x0]) + ' , '
+			y_out_0 = str(array_data['y_out'][0][y0]) + ' : '
+			val_0   = str(array_data['values'][0][y0,x0]) + ' ; '
+			x_out_1 = str(array_data['x_out'][1][x1]) + ' , '
+			y_out_1 = str(array_data['y_out'][1][y1]) + ' : '
+			val_1   = str(array_data['values'][1][y1,x1])
+			
+			if len(array_data['x_out'][0]) == 1:
+				x_out_0 = ''
+			if len(array_data['x_out'][1]) == 1:
+				x_out_1 = ''
+			if len(array_data['y_out'][0]) == 1:
+				x_out_0 = x_out_0.replace(',',':')
+				y_out_0 = ''
+			if len(array_data['y_out'][1]) == 1:
+				x_out_1 = x_out_1.replace(',',':')
+				y_out_1 = ''
 
-			print  array_data['x_out'][1][x1],',',
-			print  array_data['y_out'][1][y1],':',
-			print array_data['values'][1][y1,x1]
+			if (array_data['x_out'][0] == array_data['x_out'][1]).all():
+				if (array_data['y_out'][0] == array_data['y_out'][1]).all():
+					x_out_1 = ''
+					y_out_1 = ''
+
+			print  x_out_0 + y_out_0 + val_0 + x_out_1 + y_out_1 + val_1
 		else:
 			x = array_data['x_map'][x_pos]
 			y = array_data['y_map'][y_pos]
-			print array_data['x_out'][x],', ',
-			print array_data['y_out'][y],': ',
-			print array_data['values'][y,x]
+
+			x_out = str(array_data['x_out'][x]) + ' , '
+			y_out = str(array_data['y_out'][y]) + ' : '
+			val   = str(array_data['values'][y,x])
+
+			if len(array_data['x_out']) == 1:
+				x_out = ''
+			if len(array_data['y_out']) == 1:
+				x_out = x_out.replace(',',':')
+				y_out = ''
+
+			print x_out + y_out + val
 
 	if event.keyval == gtk.keysyms.Return:
 		gtk.main_quit()
@@ -360,22 +399,26 @@ def mouse_move_callback(window, event, array_data):
 #-------------------------------------------------------------------------------------------------
 #                                   FUNCTIONS FOR SOUND WAVE DICT
 #-------------------------------------------------------------------------------------------------
-def make_wave(freq, max_amp=None):
-	if max_amp == None:
+def make_wave(freq, volume=None):
+	if volume == None:
+		amp = 1.0
+	else:
 		max_amp = (pow(2,31)-1) * np.exp((sv.min_freq / freq) - 1)
-	wave = [max_amp * np.sin((2*np.pi*float(i)*freq) / sv.rate) for i in range(sv.period)]
+		amp = max_amp * volume
+	wave = [amp * np.sin((2*np.pi*float(i)*freq) / sv.rate) for i in range(sv.period)]
 	return np.array(wave)
 
-def make_sound_dict():
+def make_sound_dict(volume):
+
 	sounds = {}
-	stipple_wave = make_wave(0.5/sv.timeslice, max_amp=1.0)
+	stipple_wave = make_wave(0.5/sv.timeslice)
 	
 	for i in range(sv.num_of_sounds+1):
 		curve_point = sv.min_freq * (sv.max_freq/sv.min_freq)**(float(i)/sv.num_of_sounds)
 		margin = (curve_point - sv.min_freq) % (1/sv.timeslice)
 		if margin > (0.5/sv.timeslice):
 			margin -= 1/sv.timeslice
-		wave = make_wave(curve_point-margin)
+		wave = make_wave(curve_point-margin, volume)
 		sounds[str(i)] = wave.tolist()
 		sounds['s'+str(i)] = (wave * stipple_wave).tolist()
 
