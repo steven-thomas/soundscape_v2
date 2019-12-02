@@ -218,7 +218,7 @@ class audio_thread(threading.Thread):
 		while not self.quit:
 			if not self.queue.empty():
 				keys = self.queue.get()
-				s = zip(self.sounds[keys[0]],self.sounds[keys[1]])
+				s = list(zip(self.sounds[keys[0]],self.sounds[keys[1]]))
 				s = [item for sublist in s for item in sublist]
 				sound = pack('<'+2*sv.period*'l',*s)
 			self.out.write(sound)
