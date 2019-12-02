@@ -8,14 +8,17 @@ from struct import pack
 import s_functions as sf
 import s_variables as sv
 import numpy as np
-import cPickle as pickle
-import pygtk, gtk, gobject
+import  pickle
+import gi
+gi.require_version('Gtk','3.0')
+from gi.repository import Gtk as gtk
+from gi.repository import GObject as gobject
+from gi.repository import Gdk as gdk
 import sys, os
-import threading, Queue
+import threading, queue
 
-pygtk.require('2.0')
-gobject.threads_init()
-gtk.gdk.threads_init()
+#gobject.threads_init()
+#gtk.gdk.threads_init()
 
 def soundscape(input_args, x_out=None, y_out=None, sound_map=None, stipple=None, volume=None):
 	#clean input
@@ -33,20 +36,20 @@ def soundscape(input_args, x_out=None, y_out=None, sound_map=None, stipple=None,
 
 	#setup user interface
 	main_window = gtk.Window()
-	main_window.add_events(gtk.gdk.POINTER_MOTION_MASK)
+	main_window.add_events(gdk.EventMask.POINTER_MOTION_MASK)
 	main_window.set_title("soundscape")
 	main_window.fullscreen()
-	screen_width  = gtk.gdk.screen_width()
-	screen_height = gtk.gdk.screen_height()
+	screen_width  = gdk.Screen.width()
+	screen_height = gdk.Screen.height()
 
 	#setup optional args
 	stipple = sf.clean_stipple(array_data, stipple)
-	if stipple == None:
+	if stipple is None:
 		raise StandardError("invalid stipple value")
 	array_data['stipple'] = stipple
 
 	x_out, x_map = sf.clean_coord_map(array_data, x_out, 'x', screen_width)
-	if x_out == None:
+	if x_out is None:
 		raise StandardError("invalid x out value")
 	array_data['x_out'] = x_out
 	array_data['x_map'] = x_map
@@ -57,7 +60,7 @@ def soundscape(input_args, x_out=None, y_out=None, sound_map=None, stipple=None,
 		y_map[1].reverse()
 	else:
 		y_map.reverse()				#changes array layout to cartesian layout
-	if y_out == None:
+	if y_out is None:
 		raise StandardError("invalid y out value")
 	array_data['y_out'] = y_out
 	array_data['y_map'] = y_map
@@ -69,7 +72,7 @@ def soundscape(input_args, x_out=None, y_out=None, sound_map=None, stipple=None,
 		array_data['original_x_map'] = [x for x in x_map]
 		array_data['original_y_map'] = [y for y in y_map]
 
-	if sound_map == None:
+	if sound_map is None:
 		if array_data['multiple_arrays']:
 			top = max(array_data['max'])
 			bot = min(array_data['min'])
@@ -80,11 +83,11 @@ def soundscape(input_args, x_out=None, y_out=None, sound_map=None, stipple=None,
 		sound_map = a[1:]
 	else:
 		sound_map = sf.clean_sound_map(sound_map)
-		if sound_map == None:
+		if sound_map is None:
 			raise StandardError("invalid sound map value")
 	array_data['sound_map'] = sound_map
 
-	array_data['queue'] = Queue.Queue()
+	array_data['queue'] = queue.Queue()
 
 	#DEBUG PRINTING
 	#sf.debug_printing(array_data, screen_width, screen_height)

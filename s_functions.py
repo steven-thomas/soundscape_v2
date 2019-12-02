@@ -7,10 +7,13 @@ from alsaaudio import *
 from struct import pack
 import s_variables as sv
 import numpy as np
-import cPickle as pickle
-import gtk, pygtk, gobject
-import os, threading, Queue
-pygtk.require('2.0')
+import pickle
+import gi
+gi.require_version('Gtk','3.0')
+from gi.repository import Gtk as gtk
+from gi.repository import GObject as gobject
+from gi.repository import Gdk as gdk
+import os, threading
 
 #-------------------------------------------------------------------------------------------------
 #                                      FUNCTIONS FOR INPUT
@@ -40,7 +43,7 @@ def clean_coord_map(array_data, xy_out, orientation, screen_dim):
 	if orientation == 'y':
 		array_dim = array_data['height']
 
-	if xy_out == None:
+	if xy_out is None:
 		if array_data['multiple_arrays']:
 			xy0 = np.arange(array_dim[0]) + 0.5
 			xy1 = np.arange(array_dim[1]) + 0.5
@@ -61,13 +64,14 @@ def clean_coord_map(array_data, xy_out, orientation, screen_dim):
 				xy_out = None
 
 	xy_map = build_xy_mapping(array_data['multiple_arrays'], xy_out, screen_dim)
+	xy_out = np.array( xy_out)
 	return xy_out, xy_map
 
 def build_xy_mapping(multiple_arrays, xy_out, screen_dim):
 	if not multiple_arrays:
 		spacing = make_spacing(xy_out)
 		xy_map = make_xy_map(spacing, screen_dim)
-		if xy_map == None:
+		if xy_map is None:
 			return None, None
 	else:
 		if len(xy_out) != 2:
@@ -97,7 +101,7 @@ def make_spacing(xy_out):
 	return spacing
 
 def make_xy_map(spacing, screen_dim):
-	if spacing == None:
+	if spacing is None:
 		return None
 	size = (spacing[-1] - spacing[0])
 	spacing_percent = [(i-spacing[0])/float(size) for i in spacing[1:]]
@@ -106,7 +110,7 @@ def make_xy_map(spacing, screen_dim):
 	return xy_map
 
 def clean_stipple(array_data, stipple):
-	if stipple == None:
+	if stipple is None:
 		if array_data['multiple_arrays']:
 			s0 = np.zeros_like(array_data['values'][0])
 			s1 = np.zeros_like(array_data['values'][1])
@@ -136,7 +140,7 @@ def clean_stipple(array_data, stipple):
 		else:
 			if array_data['values'][0].shape != s0.shape:
 				return None
-			if s1 == None:
+			if s1 is None:
 				if array_data['values'][1].shape != s0.shape:
 					return None
 				else:
@@ -199,18 +203,18 @@ class audio_thread(threading.Thread):
 		self.quit = False
 
 		filepath = os.path.join(sv.sound_dict_loc, sv.sound_dict_name)
-		file = open(filepath, 'r')
+		file = open(filepath, 'rb')
 		self.sounds = pickle.load(file)
 		file.close()
 
-		self.out = PCM(type=PCM_PLAYBACK, mode=PCM_NORMAL, card='default')
+		self.out = PCM(type=PCM_PLAYBACK, mode=PCM_NORMAL, device='default')
 		self.out.setformat(PCM_FORMAT_S32_LE)
 		return None
 
 	def run(self):
-		s = zip(self.sounds['0'],self.sounds[str(sv.num_of_sounds)])
+		s = list(zip(self.sounds['0'],self.sounds[str(sv.num_of_sounds)]))
 		s = [item for sublist in s for item in sublist]
-		sound = pack('<'+2*sv.period*'l',*s)
+		sound = pack('<'+2*sv.period*'f',*s)
 		while not self.quit:
 			if not self.queue.empty():
 				keys = self.queue.get()
@@ -225,7 +229,7 @@ class audio_thread(threading.Thread):
 #                                      FUNCTIONS FOR PYGTK
 #-------------------------------------------------------------------------------------------------
 def key_press_callback(window, event, array_data):
-	if event.keyval == gtk.keysyms.minus:
+	if event.keyval == gdk.KEY_minus:
 		#total zoom out
 		if array_data['multiple_arrays']:
 			array_data['x_map'][0] = [x for x in array_data['original_x_map'][0] ]
@@ -236,11 +240,11 @@ def key_press_callback(window, event, array_data):
 			array_data['x_map'] = [x for x in array_data['original_x_map'] ]
 			array_data['y_map'] = [y for y in array_data['original_y_map'] ]
 
-	if event.keyval == gtk.keysyms.equal:
+	if event.keyval == gdk.KEY_equal:
 		#zoom in
 		x_pos, y_pos = window.get_pointer()
-		width  = gtk.gdk.screen_width()
-		height = gtk.gdk.screen_height()
+		width  = gdk.Screen.width()
+		height = gdk.Screen.height()
 		x_pos = max(x_pos, 1)
 		x_pos = min(x_pos, width)
 		y_pos = max(y_pos, 1)
@@ -301,7 +305,7 @@ def key_press_callback(window, event, array_data):
 		array_data['x_map'] = x_map
 		array_data['y_map'] = y_map
 
-	if event.keyval == gtk.keysyms.space:
+	if event.keyval == gdk.KEY_space:
 		#data print out
 		x_pos, y_pos = window.get_pointer()
 		if array_data['multiple_arrays']:
@@ -333,7 +337,7 @@ def key_press_callback(window, event, array_data):
 					x_out_1 = ''
 					y_out_1 = ''
 
-			print  x_out_0 + y_out_0 + val_0 + x_out_1 + y_out_1 + val_1
+			#print  x_out_0 + y_out_0 + val_0 + x_out_1 + y_out_1 + val_1
 		else:
 			x = array_data['x_map'][x_pos]
 			y = array_data['y_map'][y_pos]
@@ -348,19 +352,19 @@ def key_press_callback(window, event, array_data):
 				x_out = x_out.replace(',',':')
 				y_out = ''
 
-			print x_out + y_out + val
+			#print x_out + y_out + val
 
-	if event.keyval == gtk.keysyms.Return:
+	if event.keyval== gdk.KEY_Return:
 		gtk.main_quit()
 
-	if event.keyval == gtk.keysyms.Escape:
+	if event.keyval == gdk.KEY_Escape:
 		gtk.main_quit()
 	return None
 
 def mouse_move_callback(window, event, array_data):
 	x_pos, y_pos = window.get_pointer()
-	width  = gtk.gdk.screen_width()
-	height = gtk.gdk.screen_height()
+	width  = gdk.Screen.width()
+	height = gdk.Screen.height()
 	x_pos = max(x_pos, 0)
 	x_pos = min(x_pos, width)
 	y_pos = max(y_pos, 0)
@@ -423,7 +427,7 @@ def make_sound_dict(volume):
 		sounds['s'+str(i)] = (wave * stipple_wave).tolist()
 
 	fileplace = os.path.join(sv.sound_dict_loc, sv.sound_dict_name)
-	file = open(fileplace, 'w')
+	file = open(fileplace, 'wb')
 	pickle.dump(sounds, file)
 	file.close()
 	return None
@@ -436,48 +440,48 @@ def debug_printing(array_data):
 	if array_data['multiple_arrays']:
 		pass
 	else:
-		print 'map zoomed:',
-		print not array_data['original_y_map'] == array_data['y_map']
-		print 'y_map values:'
+		#print 'map zoomed:',
+		#print not array_data['original_y_map'] == array_data['y_map']
+		#print 'y_map values:'
 		cur_val = array_data['y_map'][0]
 		start = 0
 		for i in range(len(array_data['y_map'])):
 			val = array_data['y_map'][i]
 			if val != cur_val:
-				print str(cur_val)+': '+str(start)+'-'+str(i)
+				#print str(cur_val)+': '+str(start)+'-'+str(i)
 				cur_val = val
 				start = i
-		print str(array_data['y_map'][-1])+': '+str(start)+'-'+str(len(array_data['y_map']))
+		#print str(array_data['y_map'][-1])+': '+str(start)+'-'+str(len(array_data['y_map']))
 
-		print '\n'
-		print 'original_y_map values:'
+		#print '\n'
+		#print 'original_y_map values:'
 		cur_val = array_data['original_y_map'][0]
 		start = 0
 		for i in range(len(array_data['original_y_map'])):
 			val = array_data['original_y_map'][i]
 			if val != cur_val:
-				print str(cur_val)+': '+str(start)+'-'+str(i)
+				#print str(cur_val)+': '+str(start)+'-'+str(i)
 				cur_val = val
 				start = i
-		print str(array_data['original_y_map'][-1])+': '+str(start)+'-'+str(len(array_data['original_y_map']))
-		print '\n'
+		#print str(array_data['original_y_map'][-1])+': '+str(start)+'-'+str(len(array_data['original_y_map']))
+		#print '\n'
 
 		"""
-		print 'matrix shape: ',
-		print array_data['values'].shape
-		print 'width: ',
-		print array_data['width']
-		print 'height: ',
-		print array_data['height']
-		print 'x_map'
+		#print 'matrix shape: ',
+		#print array_data['values'].shape
+		#print 'width: ',
+		#print array_data['width']
+		#print 'height: ',
+		#print array_data['height']
+		#print 'x_map'
 		for i in set(array_data['x_map']):
-			print (str(i)+' count: '),
-			print array_data['x_map'].index(i)
-		print 'y_map'
+			#print (str(i)+' count: '),
+			#print array_data['x_map'].index(i)
+		#print 'y_map'
 		for i in set(array_data['y_map']):
-			print (str(i)+' count: '),
-			print array_data['y_map'].index(i)
-		print 'values: ',
-		print array_data['values']
+			#print (str(i)+' count: '),
+			#print array_data['y_map'].index(i)
+		#print 'values: ',
+		#print array_data['values']
 		"""
 	return None
