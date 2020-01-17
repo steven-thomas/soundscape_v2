@@ -355,9 +355,10 @@ def key_press_callback(window, event, array_data):
 			#print x_out + y_out + val
 
 	if event.keyval== gdk.KEY_Return:
+		window.destroy()
 		gtk.main_quit()
-
 	if event.keyval == gdk.KEY_Escape:
+		window.destroy()
 		gtk.main_quit()
 	return None
 
