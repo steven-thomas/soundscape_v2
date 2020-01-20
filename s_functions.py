@@ -337,7 +337,7 @@ def key_press_callback(window, event, array_data):
 					x_out_1 = ''
 					y_out_1 = ''
 
-			#print  x_out_0 + y_out_0 + val_0 + x_out_1 + y_out_1 + val_1
+			print(  x_out_0 + y_out_0 + val_0 + x_out_1 + y_out_1 + val_1)
 		else:
 			x = array_data['x_map'][x_pos]
 			y = array_data['y_map'][y_pos]
@@ -352,7 +352,7 @@ def key_press_callback(window, event, array_data):
 				x_out = x_out.replace(',',':')
 				y_out = ''
 
-			#print x_out + y_out + val
+			print( x_out + y_out + val)
 
 	if event.keyval== gdk.KEY_Return:
 		window.destroy()
