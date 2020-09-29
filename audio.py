@@ -25,9 +25,7 @@ class Channel( object ):
             #get slice of waveform
             out_wave = self.wave[ first_ind:last_ind ]
             #update offset to remove discontinuity 'click'
-            #self.offset = int( last_ind % (cfg.samp_rate/self.freq) )
-            rollover = cfg.samp_rate * float(cfg.stipple_freq) / float(self.freq)
-            self.offset = int( last_ind % rollover )
+            self.offset = int( last_ind % (cfg.samp_rate/self.freq) )
         return out_wave
         
     def update(self, freq=None, wave=None, silent=None):
@@ -54,10 +52,10 @@ class SoundController( object ):
         #status = [freq_index, stipple_flag, silent_flag] for each channel
         self.status_1 = [ 0, False, True ]
         self.status_2 = [ 0, False, True ]
-        self.freq_list = list( np.logspace( np.log2(cfg.min_freq),
-                                            np.log2(cfg.max_freq),
-                                            num=cfg.nfreq,
-                                            endpoint=True, base=2.0 ) )
+        f_list = list( np.logspace( np.log2(cfg.min_freq), np.log2(cfg.max_freq),
+                                    num=cfg.nfreq, endpoint=True, base=2.0 ) )
+        #make each freq a multiple of stipple_freq to remove 'crackle' playing stippled waves
+        self.freq_list = [ f-(f%cfg.stipple_freq) for f in f_list ]
         self.tone_wave_list = [ self.make_wave(f,False) for f in self.freq_list ]
         self.stipple_wave_list = [ self.make_wave(f,True) for f in self.freq_list ]
         return None
@@ -65,7 +63,6 @@ class SoundController( object ):
     def make_wave( self, freq, stipple=False ):
         #max size of 16-bit signed integer
         int16_max = 32767
-        stipple_freq = 10.
 
         nsample = int( cfg.samp_rate * cfg.samp_len )
         arr = np.arange(nsample).astype(float)
@@ -86,10 +83,11 @@ class SoundController( object ):
             if is_silent:
                 self.ch_1.update( silent=True )
             else:
-                freq = self.freq_list[index]
                 if is_stipple:
+                    freq = cfg.stipple_freq
                     wave = self.stipple_wave_list[index]
                 else:
+                    freq = self.freq_list[index]
                     wave = self.tone_wave_list[index]
                 self.ch_1.update( freq=freq, wave=wave, silent=False )
             self.status_1 = [ i for i in signal_1 ]
@@ -98,10 +96,11 @@ class SoundController( object ):
             if is_silent:
                 self.ch_2.update( silent=True )
             else:
-                freq = self.freq_list[index]
                 if is_stipple:
+                    freq = cfg.stipple_freq
                     wave = self.stipple_wave_list[index]
                 else:
+                    freq = self.freq_list[index]
                     wave = self.tone_wave_list[index]
                 self.ch_2.update( freq=freq, wave=wave, silent=False )
             self.status_2 = [ i for i in signal_2 ]

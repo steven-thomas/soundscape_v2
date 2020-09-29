@@ -19,4 +19,4 @@ stipple_freq = 10
 #audio sample rate, 44100=CD/DVD quality
 samp_rate = 44100
 #length of generated sound samples (seconds)
-samp_len = 0.1
+samp_len = 0.5
