@@ -8,6 +8,8 @@ zoom_lvl = 0.5
 
 #volume for array tones, 0=mute, 1=max volume
 volume = 0.8
+#volume boost for stipple sounds ( boost + volume <= 1. )
+stipple_boost = 0.1
 #number of frequencies in sound map
 nfreq = 25
 #lowest frequency to use (Hz)

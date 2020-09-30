@@ -63,14 +63,16 @@ class SoundController( object ):
     def make_wave( self, freq, stipple=False ):
         #max size of 16-bit signed integer
         int16_max = 32767
+        vol = cfg.volume
 
         nsample = int( cfg.samp_rate * cfg.samp_len )
         arr = np.arange(nsample).astype(float)
         sinewave = np.sin(2*np.pi*freq*(arr/float(cfg.samp_rate)))
         if stipple:
+            vol += cfg.stipple_boost
             stipple_wave = np.sin(2*np.pi*(cfg.stipple_freq)*(arr/float(cfg.samp_rate)))
             sinewave *= stipple_wave
-        soundwave = (cfg.volume * int16_max * sinewave).astype( np.int16 )
+        soundwave = (vol * int16_max * sinewave).astype( np.int16 )
         return soundwave
 
     def update( self, s_1, s_2 ):
