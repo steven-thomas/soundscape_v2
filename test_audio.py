@@ -1,3 +1,7 @@
+"""
+Steven Thomas (2020-09)
+TODO: add licence/copyright note
+"""
 
 from audio import SoundController
 import config as cfg
