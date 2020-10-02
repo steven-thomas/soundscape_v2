@@ -3,10 +3,10 @@ Steven Thomas (2020-09)
 TODO: add licence/copyright note
 """
 
-from audio import SoundController
+from audio import AudioController
 import config as cfg
 
-audio = SoundController()
+audio = AudioController()
 
 help_msg = """enter a pair of numbers between 0 and {0:}, seperated by a space.
 0 = mute channel, 1-{0:} = frequencies between {1:}Hz and {2:}Hz.

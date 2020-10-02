@@ -44,7 +44,7 @@ class Channel( object ):
 
 
 
-class SoundController( object ):
+class AudioController( object ):
     """Main controller for sound."""
     def __init__(self):
         self.ch_1 = Channel()
