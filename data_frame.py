@@ -7,16 +7,6 @@ import numpy as np
 
 import config as cfg
 
-# array[y,x]
-
-#DataController:
-#- 2 data arrays
-#- 2 sound index arrays
-#- 2 stipple arrays
-#- 1 label array
-#- i/j
-#- update
-
 class DataController( object ):
 
     def __init__( self, arr1, arr2, stip1, stip2, label, sound_func ):

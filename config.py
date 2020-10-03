@@ -3,8 +3,11 @@ Steven Thomas (2020-09)
 TODO: add licence/copyright note
 """
 
-#zoom level per keypress, 0=no zoom, 1=infinite zoom
+#zoom level per keypress, 0=no zoom, 1=double spacing
 zoom_lvl = 0.5
+#pad to cut off each side of screen (fraction of screen)
+x_pad = 0.02
+y_pad = 0.02
 
 #volume for array tones, 0=mute, 1=max volume
 volume = 0.8
