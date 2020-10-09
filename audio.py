@@ -124,10 +124,11 @@ class AudioController( object ):
         self.audio = pyaudio.PyAudio()
         audio_format = self.audio.get_format_from_width( sampwidth )
         self.stream = self.audio.open( format=audio_format,
-                                  channels=nchannels,
-                                  rate=cfg.samp_rate,
-                                  output=True,
-                                  stream_callback=self._callback )
+                                       channels=nchannels,
+                                       rate=cfg.samp_rate,
+                                       output=True,
+                                       stream_callback=self._callback,
+                                       output_device_index=cfg.device_index)
         self.stream.start_stream()
         return None
 

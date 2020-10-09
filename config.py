@@ -25,3 +25,5 @@ stipple_freq = 10
 samp_rate = 44100
 #length of generated sound samples (seconds)
 samp_len = 0.5
+#output audio device index (None = use default)
+device_index = None
